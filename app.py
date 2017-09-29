@@ -10,7 +10,6 @@ from resources.store import Store, StoreList
 ## from resources/item.py, classes Item and ItemList.
 
 app = Flask(__name__)
-app.debug = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 ''' turn OFF the extention **Flask** SQLAlchemy modification tracker
