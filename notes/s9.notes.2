@@ -1,0 +1,82 @@
+##########################################
+
+# create a service that will run uWSGI (uWSGI will then run the Flask app):
+$ sudo vim /etc/systemd/system/uwsgi_items_rest.service   #Ubuntu specific!
+
+
+[Unit]
+Description=uWSGI items rest
+
+[Service]
+#1 postgresql username (kate) & password (1234), running locally (localhost) at port 5432 (:5432), accessing database (/kate)
+#2 run service; VENV is a virtualenv wrapper; emperor is a controller; how to run uwsgi (according to uwsgi.ini); kill the python code on wsgi termination; run uwsgi as the USER kate...
+## on 1 & 2: check/make sure the env variable (DATABASE_URL) exists ***first***, **then** execute service (ExecStart) ##
+Environment=DATABASE_URL=postgres://kate:1234@localhost:5432/kate
+ExecStart=/var/www/html/items-rest/venv/bin/uwsgi --master --emperor /var/www/html/items-rest/uwsgi.ini --die-on-term --uid kate --gid kate --logto /var/www/html/items-rest/log/emperor.log
+Restart=always
+KillSignal=SIGQUIT
+Type=notify
+NotifyAccess=all
+
+[Install]
+WantedBy=multi-user.target
+
+#####################
+
+
+
+
+##########################################
+
+$ vim uwsgi.ini
+
+
+[uwsgi]
+base = /var/www/html/items-rest		# where the uwsgi exists
+app = run				# which file to find the app in: run.py
+module = %(app)				# loads the app variable from the line above
+
+home = %(base)/venv			# the home of the uwsgi process lives in the virtualenv
+pythonpath = %(base)			# where the python project begins / what is the root directory of the python project 
+socket = %(base)/socket.sock		# socket.sock allows communication between uwsgi and nginx
+
+chmod-socket = 777
+
+processes = 8
+
+threads = 8
+
+harakiri = 15				# if one of the threads gets blocked or errors and shuts down, then after 15 secs the emperor is going to destroy it and create another one
+
+callable = app				# not app.py, but the variable app (in MODULE) imported in run.py
+
+logto = /var/www/html/items-rest/log/%n.log	# Flask debug logging; %n == uwsgi
+
+#####################
+
+
+
+
+$ sudo systemctl start uwsgi_items_rest
+> [go into] wsgi_items_rest.service
+  > [run] ExecStart
+    > [run] uWSGI
+      > [look at] uwsgi.ini
+        > [run] Flask app & [create] SOCKET file (which will communicate with nginx to root the requests to the Flask app)
+
+
+## TO DO: check log/uwsgi.log
+## nginx -- uWSGI -- Flask App
+
+
+
+
+# remove the default nginx settings, reload (?) and restart nginx:
+$ sudo rm /etc/nginx/sites-enabled/default
+$ sudo systemctl reload nginx
+$ sudo systemctl restart nginx
+$ sudo systemctl start uwsgi_items_rest # uwsgi_items_rest service [uWSGI] will load the Flask app
+## postgresql should be already running !
+>> Postman: change the env variable URL to the IP of the serverbox
+
+

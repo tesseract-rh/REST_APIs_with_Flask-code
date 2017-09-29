@@ -1,0 +1,113 @@
+# install pkgs:
+postgresql
+postgresql-contrib
+
+$ sudo -i -u postgres	# change into the postgres USER (auto-created)
+$ psql			# login into the postgres DB (auto-created)
+postgres=# \conninfo	# get connection info
+postgres=# CREATE TABLE ... 
+postgres=# \q		# exit
+
+# create a postgresql user 'kate'; -P sets up a password:
+postgres@... $ createuser kate -P
+# create a db (of the same name) for user 'kate':
+postgres@... $ createdb kate
+# switch to user 'kate' and login to the db:
+kate@...     $ psql
+# query info:
+kate=> \conninfo
+# to delete the database:
+kate@...     $ dropdb
+
+
+
+
+##########################################
+
+kate@...     $ sudo vim /etc/postgresql/9.5/main/pg_hba.conf
+>>
+
+# TYPE        DATABASE        USER        ADDRESS        METHOD
+  local	      all	      postgres           	 peer
+  local	      all	      all			 peer
+# local	      all	      all			 md5  << SQLAlchemy security requirement !!
+  host        all             all         127.0.0.1/32   md5
+  host        all             all         ::1/128        md5
+
+# "local" is for Unix domain socket connections only
+# "peer" > no password
+# "md5"  > ask for a password
+
+# user postgres has access to ALL dbs, from the local host, no passwd required
+# all users have access to ALL dbs, from the local host, no passwd required
+
+#####################
+
+
+
+
+nginx < reverse proxy that stands between the apps and the users
+$ sudo ufw status	 # that's the Ubuntu firewall!
+$ sudo ufw enable
+$ sudo ufw allow 'Nginx HTTP'
+$ sudo ufw allow ssh	 # !!
+$ sudo ufw status  	 # check if all set good
+$ systemctl status nginx # systemd now?!
+
+
+
+
+##########################################
+
+$ sudo vim /etc/nginx/sites-available/items-rest.conf
+###### nginx CONFIG:
+
+
+server {
+listen 80;			# instead of doing GET mysite.com:5645 (example port), just use standard http port
+real_ip_header X-Forwarded-For;	# nginx will forward the IP of the requester to the Flask app
+set_real_ip_from 127.0.0.1;	# nginx will 'mask' the IP to 127... as the connection is coming from nginx
+server_name localhost;		# again, this is about nginx sitting locally
+
+location / {
+include uwsgi_params;					# uWSGI can run the Flask app in multithred / more    \
+uwsgi_pass unix:/var/www/html/items-rest/socket.sock;   # efficiently, it can also restart threads if they fail; 
+uwsgi_modifier1 30;					# when to kill threads if they become locked
+}
+
+error_page 404 /404.html;
+location = /404.html {
+root /usr/share/nginx/html;
+}
+
+error_page 500 502 503 504 /50x.html;
+location = /50x.html {
+root /usr/share/nginx/html;
+}
+}
+
+#####################
+
+
+
+
+$ sudo ln -s /etc/nginx/sites-available/items-rest.conf /etc/nginx/sites-enabled/
+$ sudo mkdir /var/www/html/items-rest/
+$ sudo chown kate:kate /var/www/html/items-rest/
+$ cd /var/www/html/items-rest/
+$ git clone < app > .	# mind the DOT!
+# example:
+  git clone git@github.com:tesseract-rh/REST_APIs_with_Flask-code.git .
+$ mkdir log		# NO sudo!!
+
+$ sudo ... install: 
+  python-pip 
+  python3-dev		# uwsgi, psycopg2
+  libpq-dev		# psycopg2
+
+$ pip install virtualenv
+$ virtualenv...
+$ source .../bin/activate
+$ pip install -r requirements.txt
+
+

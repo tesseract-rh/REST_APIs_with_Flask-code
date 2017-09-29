@@ -1,0 +1,35 @@
+cd git_code/
+vim .gitignore
+git init
+git config --global user.email < email >
+git config --global user.name "< username >"
+cat ~/.gitconfig 
+git remote add origin git@github.com:< git nick >/< git repo >.git
+git push -u origin master
+git status
+
+git status
+git add [file]
+git add *
+git commit -m "< commit message >"
+git commit -am "< commit message >"
+git push
+
+git log
+git log --help
+git log --oneline
+git show < commit ID >
+git revert < commit ID >
+
+git branch feature/item-categories	# create a new branch
+git checkout feature/item-categories	# checkout into it
+git add [file]
+git commit -m "< msg >"
+# create the branch REMOTELY & push the changes there:
+git push --set-upstream origin feature/item-categories	
+git checkout master			# go back to the master branch
+git merge feature/item-categories	# merge the new branch to Master
+git push
+# delete the new branch: once we've merged the new branch to the Master,
+# we should stop using it and create another one instead:
+git branch -d feature/item-categories 	
